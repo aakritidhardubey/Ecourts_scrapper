@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+selenium
+click
+lxml
+reportlab

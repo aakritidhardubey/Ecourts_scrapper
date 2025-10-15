@@ -18,6 +18,8 @@ try:
 except ImportError:
     SELENIUM_SUPPORT = False
 
+from pdf_generator import convert_causelist_to_pdf
+
 # --- Configuration ---
 BASE_URL = "https://services.ecourts.gov.in/ecourtindia_v6/"
 
@@ -53,65 +55,87 @@ def download_causelist_with_selenium(config, for_date):
         print("2. Select the correct Date from the calendar.")
         print("3. Solve the CAPTCHA.")
         print("4. Click the 'Civil' or 'Criminal' button to view the list.")
-        print("The script will now wait for the results to load inside the iframe.")
         print("!"*60 + "\n")
 
-        # --- THE IFRAME FIX IS HERE ---
-        # Step A: Wait for the iframe itself to be visible and switch focus into it.
-        # This gives you 5 minutes (300 seconds) to complete the form.
-        WebDriverWait(driver, 300).until(
-            EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe"))
-        )
-        print("✓ Switched focus into the results iframe.")
+        cases = []
+        # Check if results are in an iframe
+        try:
+            WebDriverWait(driver, 30).until(
+                EC.frame_to_be_available_and_switch_to_it((By.TAG_NAME, "iframe"))
+            )
+            print("✓ Switched to results iframe.")
+            
+            WebDriverWait(driver, 60).until(
+                EC.presence_of_element_located((By.XPATH, "//table"))
+            )
+            page_source = driver.page_source
+            soup = BeautifulSoup(page_source, 'lxml')
+            hearings_table = soup.find('table')
+                
+        except TimeoutException:
+            # Check main page if no iframe
+            driver.switch_to.default_content()
+            
+            WebDriverWait(driver, 60).until(
+                EC.presence_of_element_located((By.XPATH, "//table"))
+            )
+            
+            page_source = driver.page_source
+            soup = BeautifulSoup(page_source, 'lxml')
+            
+            # Find the largest table 
+            all_tables = soup.find_all('table')
+            hearings_table = max(all_tables, key=lambda t: len(t.find_all('tr'))) if all_tables else None
 
-        # Step B: NOW that we are inside the iframe, wait for the table to appear.
-        # We look for any table with at least one row, which is a reliable sign of results.
-        results_table_element = WebDriverWait(driver, 60).until(
-            EC.presence_of_element_located((By.XPATH, "//table/tbody/tr"))
-        )
-        print("✅ Found hearings table inside the iframe. Now scraping data...")
-        
-        # Get the page source OF THE IFRAME and parse it
-        page_source = driver.page_source
-        soup = BeautifulSoup(page_source, 'lxml')
-        
-        hearings_table = soup.find('table')
         if not hearings_table:
-            print("⚠️ Could not find the hearings table in the iframe source.")
+            print(" Could not find the hearings table.")
             return driver
 
-        # Scrape all cases from the table
-        cases = []
+        # Extract headers and data
         headers = [th.text.strip() for th in hearings_table.find_all('th')]
-        for row in hearings_table.find_all('tr')[1:]: # Skip header row
+        
+        if not headers:
+            first_row = hearings_table.find('tr')
+            if first_row:
+                headers = [td.text.strip() for td in first_row.find_all('td')]
+        
+        rows = hearings_table.find_all('tr')[1:] if headers else hearings_table.find_all('tr')
+        
+        for row in rows:
             cells = row.find_all('td')
             if len(cells) > 0:
-                case_data = {headers[i]: cell.text.strip() for i, cell in enumerate(cells) if i < len(headers)}
+                if headers:
+                    case_data = {headers[i]: cell.text.strip() for i, cell in enumerate(cells) if i < len(headers)}
+                else:
+                    case_data = {f"Column_{i+1}": cell.text.strip() for i, cell in enumerate(cells)}
                 cases.append(case_data)
 
         print(f"✓ Scraped {len(cases)} cases from the cause list.")
 
         if cases:
             os.makedirs("cause_lists", exist_ok=True)
-            filename = f"causelist_{for_date.replace('-', '_')}.json"
+            timestamp = datetime.now().strftime("%H%M%S")
+            filename = f"causelist_{for_date.replace('-', '_')}_{timestamp}.json"
             save_path = os.path.join("cause_lists", filename)
+            
             with open(save_path, "w", encoding="utf-8") as f:
                 json.dump(cases, f, indent=2, ensure_ascii=False)
-            print(f"✅ Success! Scraped data saved to: {save_path}")
+            print(f"Success! Scraped data saved to: {save_path}")
+        else:
+            print(" No cases found.")
 
-        # Step C: Switch back to the main document (important for cleanup)
         driver.switch_to.default_content()
-        return driver
+        return driver,save_path
 
     except TimeoutException:
-        print("\n❌ Timed out waiting for the results to load.")
-        print("   - You may have taken too long, or no cause list was available for that date.")
+        print("\n Timed out waiting for the results to load.")
         if driver: driver.quit()
         return None
     except Exception as e:
         print(f"An error occurred: {e}")
         if driver: driver.quit()
         return None
+    
 
 # --- Case Status Search (By CNR Number) ---
 
@@ -295,7 +319,6 @@ def download_causelist(today, tomorrow):
     config = load_config()
     if not config: return
     
-    # Check if the deadline has passed to remind the user
     deadline = date(2025, 10, 20)
     if date.today() > deadline:
         print(f"\nNote: The original assignment deadline of {deadline.strftime('%B %dth')} has passed.")
@@ -303,7 +326,10 @@ def download_causelist(today, tomorrow):
     if tomorrow: target_date = (date.today() + timedelta(days=1)).strftime("%d-%m-%Y")
     else: target_date = date.today().strftime("%d-%m-%Y")
     
-    driver = download_causelist_with_selenium(config, target_date)
+    driver,json_path = download_causelist_with_selenium(config, target_date)
+
+    if json_path:
+        convert_causelist_to_pdf(json_path)
     if driver:
         print("\nClosing browser...")
         driver.quit()
