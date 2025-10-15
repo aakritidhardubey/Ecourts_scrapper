@@ -66,7 +66,7 @@ python ecourts_scraper.py download-causelist --tomorrow
 5. Click 'Civil' or 'Criminal' button
 6. Script automatically extracts and saves the data as JSON and pdf file
 
-**Output:** Saved in `cause_lists/` folder as `causelist_DD_MM_YYYY_HHMMSS.json` and pdf as `causelist_DD_MM_YYYY_HHMMSS.json`
+**Output:** Saved in `cause_lists/` folder as `causelist_DD_MM_YYYY_HHMMSS.json` and pdf as `causelist_DD_MM_YYYY_HHMMSS.pdf`
 
 ### 2. Search Case Status
 

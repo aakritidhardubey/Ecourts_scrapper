@@ -43,7 +43,7 @@ def convert_causelist_to_pdf(json_path):
             cases = json.load(f)
         
         if not cases:
-            print("   ⚠️ No case data found. PDF generation skipped."); return
+            print("  No case data found. PDF generation skipped."); return
 
         pdf_path = json_path.replace('.json', '.pdf')
         
