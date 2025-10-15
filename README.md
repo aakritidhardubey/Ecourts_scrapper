@@ -64,9 +64,9 @@ python ecourts_scraper.py download-causelist --tomorrow
 3. Select the date from calendar
 4. Solve the CAPTCHA
 5. Click 'Civil' or 'Criminal' button
-6. Script automatically extracts and saves the data as JSON
+6. Script automatically extracts and saves the data as JSON and pdf file
 
-**Output:** Saved in `cause_lists/` folder as `causelist_DD_MM_YYYY_HHMMSS.json`
+**Output:** Saved in `cause_lists/` folder as `causelist_DD_MM_YYYY_HHMMSS.json` and pdf as `causelist_DD_MM_YYYY_HHMMSS.json`
 
 ### 2. Search Case Status
 
@@ -95,6 +95,7 @@ python ecourts_scraper.py search --cnr XXXXXXXXXXXXXXXXXXXX --download-pdf
 ecourts-scraper/
 │
 ├── ecourts_scraper.py      # Main script
+├── pdf_generator.py        # pdf generation file
 ├── config.json             # Court configuration
 ├── requirements.txt        # Python dependencies
 ├── README.md              # This file
@@ -138,13 +139,6 @@ pip install requests beautifulsoup4 selenium click lxml reportlab
 4. Parses case details and hearing dates
 5. Optionally downloads final orders
 
-## Assignment Requirements Met
-
-✅ **Cause List Scraping**: Downloads complete cause lists from district courts  
-✅ **Data Storage**: Saves data in JSON format (easily convertible to PDF if needed)  
-✅ **Automation**: Handles navigation and data extraction automatically  
-✅ **CAPTCHA Handling**: Interactive approach for CAPTCHA solving  
-✅ **Multiple Courts**: Timestamp-based naming prevents overwriting data from different courts
 
 ## Troubleshooting
 
@@ -179,14 +173,6 @@ pip install selenium
 - Excel export functionality
 - Automated scheduling for daily downloads
 - Email notifications for case listings
-
-## License
-
-MIT License - Feel free to use and modify
-
-## Author
-
-[Your Name]
 
 ## Demo Video
 

@@ -1,5 +1,3 @@
-# pdf_generator.py
-
 import json
 import re
 from datetime import datetime
@@ -49,12 +47,10 @@ def convert_causelist_to_pdf(json_path):
 
         pdf_path = json_path.replace('.json', '.pdf')
         
-        # --- THE FIX: INTELLIGENT HEADER DETECTION ---
-        # Find the item with the most keys to determine the full set of headers.
         header_item = max(cases, key=len, default={})
         headers = list(header_item.keys())
         if not headers:
-            print("   ⚠️ JSON contains no data with headers. PDF generation skipped."); return
+            print("  JSON contains no data with headers. PDF generation skipped."); return
         
         pagesize = landscape(A4) if len(headers) > 5 else A4
         doc = SimpleDocTemplate(pdf_path, pagesize=pagesize, topMargin=2*cm, bottomMargin=2.5*cm, leftMargin=1*cm, rightMargin=1*cm)
@@ -71,7 +67,7 @@ def convert_causelist_to_pdf(json_path):
         elements.append(Paragraph(f"<b>Total Items Listed: {len(cases)}</b>", styles['Normal']))
         elements.append(Spacer(1, 0.5*cm))
 
-        # --- THE FIX: DATA PRE-PROCESSING ---
+        # ---  DATA PRE-PROCESSING ---
         data = []
         table_styles = []
 
@@ -80,7 +76,7 @@ def convert_causelist_to_pdf(json_path):
         subheading_style = ParagraphStyle(name='Subheading', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=1)
         cell_style = ParagraphStyle(name='Cell', parent=styles['Normal'], fontSize=8, leading=10)
 
-        # Add the main headers first
+        # the main headers 
         data.append([Paragraph(h, header_style) for h in headers])
 
         for i, case in enumerate(cases):
